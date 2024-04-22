@@ -30,9 +30,10 @@ class SampleItemViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void removeItem(String id) {
+  void removeItem(String id, BuildContext context) {
     items.removeWhere((item) => item.id == id);
     notifyListeners();
+    showSnackbar(context, "Đã xóa mục thành công");
   }
 
   void updateItem(String id, String newName, String newDescription) {
@@ -44,6 +45,15 @@ class SampleItemViewModel extends ChangeNotifier {
     } catch (e) {
       debugPrint("Không tìm thấy mục với ID $id");
     }
+  }
+
+  void showSnackbar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 }
 
@@ -94,20 +104,27 @@ class _SampleItemUpdateState extends State<SampleItemUpdate> {
           )
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Tên'),
-            ),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Mô tả'),
-            ),
-          ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Tên'),
+              ),
+              const SizedBox(
+                  height: 20), // Thêm một khoảng cách giữa các TextFormField
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Mô tả'),
+              ),
+              const SizedBox(
+                  height: 20), // Thêm một khoảng cách giữa các TextFormField
+              // Add more text fields or other widgets here if needed
+            ],
+          ),
         ),
       ),
     );
@@ -127,8 +144,8 @@ class SampleItemWidget extends StatelessWidget {
       valueListenable: item.name,
       builder: (context, name, child) {
         return ListTile(
-          title: Text(name!),
-          subtitle: Text(item.description.value),
+          title: Text(item.id),
+          subtitle: Text(name!),
           leading: const CircleAvatar(
             foregroundImage: AssetImage('assets/images/flutter_logo.png'),
           ),
@@ -142,7 +159,7 @@ class SampleItemWidget extends StatelessWidget {
 
 class SampleItemDetailsView extends StatefulWidget {
   final SampleItem item;
-  // ignore: use_key_in_widget_constructors
+
   const SampleItemDetailsView({Key? key, required this.item});
 
   @override
@@ -166,7 +183,7 @@ class _SampleItemDetailsViewState extends State<SampleItemDetailsView> {
             ),
             TextButton(
               onPressed: () {
-                viewModel.removeItem(widget.item.id);
+                viewModel.removeItem(widget.item.id, context);
                 Navigator.of(context).popUntil((route) => route.isFirst);
               },
               child: const Text("Xóa"),
@@ -191,7 +208,7 @@ class _SampleItemDetailsViewState extends State<SampleItemDetailsView> {
           value['name'] ?? '',
           value['description'] ?? '',
         );
-        setState(() {}); // Cập nhật lại giao diện
+        setState(() {});
       }
     });
   }
@@ -212,24 +229,28 @@ class _SampleItemDetailsViewState extends State<SampleItemDetailsView> {
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              widget.item.name.value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+              child: Text(
+                widget.item.name.value,
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              widget.item.description.value,
-              style: const TextStyle(fontSize: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                widget.item.description.value,
+                style: const TextStyle(fontSize: 16),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16.0), // Add some spacing at the bottom
+          ],
+        ),
       ),
     );
   }
@@ -244,6 +265,20 @@ class SampleItemListView extends StatefulWidget {
 
 class _SampleItemListViewState extends State<SampleItemListView> {
   final viewModel = SampleItemViewModel();
+  late TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -259,34 +294,67 @@ class _SampleItemListViewState extends State<SampleItemListView> {
               ).then((value) {
                 if (value != null) {
                   viewModel.addItem(
-                      value['name'] ?? '', value['description'] ?? '');
+                    value['name'] ?? '',
+                    value['description'] ?? '',
+                  );
                 }
               });
             },
           )
         ],
       ),
-      body: ListenableBuilder(
-        listenable: viewModel,
-        builder: (context, _) {
-          return ListView.builder(
-            itemCount: viewModel.items.length,
-            itemBuilder: (context, index) {
-              final item = viewModel.items[index];
-              return SampleItemWidget(
-                key: ValueKey(item.id),
-                item: item,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => SampleItemDetailsView(item: item),
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(
+                    () {}); // Khi có sự thay đổi trong ô tìm kiếm, cập nhật giao diện
+              },
+              decoration: InputDecoration(
+                labelText: 'Tìm kiếm',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListenableBuilder(
+              listenable: viewModel,
+              builder: (context, _) {
+                // Lọc danh sách mục dựa trên từ khóa tìm kiếm
+                final filteredItems = viewModel.items.where((item) {
+                  final searchTerm = _searchController.text.toLowerCase();
+                  final itemName = item.name.value.toLowerCase();
+                  return itemName.contains(searchTerm);
+                }).toList();
+                return ListView.builder(
+                  itemCount: filteredItems.length,
+                  itemBuilder: (context, index) {
+                    final item = filteredItems[index];
+                    return SampleItemWidget(
+                      key: ValueKey(item.id),
+                      item: item,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => SampleItemDetailsView(
+                              item: item,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
