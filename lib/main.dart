@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'crud_mvvm_2.dart';
+import 'phone.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +19,6 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
           useMaterial3: true,
         ),
-        home: const SampleItemListView());
+        home: const PhoneListView());
   }
 }
