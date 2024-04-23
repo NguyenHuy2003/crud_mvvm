@@ -63,13 +63,14 @@ class PhoneViewModel extends ChangeNotifier {
 
   // Cập nhật thông tin điện thoại trong danh sách
   void updatePhone(String id, String newBrand, String newModel, int newPrice,
-      String newSpecifications) {
+      String newSpecifications, String newImage) {
     try {
       final phone = phones.firstWhere((phone) => phone.id == id);
       phone.brand.value = newBrand;
       phone.model.value = newModel;
       phone.price.value = newPrice;
       phone.specifications.value = newSpecifications;
+      phone.image = newImage;
       notifyListeners();
     } catch (e) {
       debugPrint("Không tìm thấy điện thoại với ID $id");
@@ -93,14 +94,16 @@ class PhoneUpdate extends StatefulWidget {
   final String? initialModel;
   final int? initialPrice;
   final String? initialSpecifications;
+  final String? initialImage;
 
-  const PhoneUpdate(
-      {Key? key,
-      this.initialBrand,
-      this.initialModel,
-      this.initialPrice,
-      this.initialSpecifications})
-      : super(key: key);
+  const PhoneUpdate({
+    Key? key,
+    this.initialBrand,
+    this.initialModel,
+    this.initialPrice,
+    this.initialSpecifications,
+    this.initialImage,
+  }) : super(key: key);
 
   @override
   State<PhoneUpdate> createState() => _PhoneUpdateState();
@@ -122,6 +125,7 @@ class _PhoneUpdateState extends State<PhoneUpdate> {
         TextEditingController(text: widget.initialPrice?.toString() ?? '');
     _specificationsController =
         TextEditingController(text: widget.initialSpecifications);
+    _imagePath = widget.initialImage;
   }
 
   @override
@@ -265,9 +269,28 @@ class PhoneWidget extends StatelessWidget {
         ),
       ),
       title: Text('${phone.brand.value} ${phone.model.value}'),
-      subtitle: Text('${phone.price.value} VND'),
+      subtitle: Text(
+        '${_formatCurrency(phone.price.value)} đ',
+      ),
       onTap: onTap,
     );
+  }
+
+  String _formatCurrency(int amount) {
+    String formattedAmount = amount.toString();
+    if (formattedAmount.length <= 3) {
+      return formattedAmount;
+    }
+    int separatorIndex = formattedAmount.length % 3;
+    StringBuffer buffer = StringBuffer();
+    buffer.write(formattedAmount.substring(0, separatorIndex));
+    for (int i = separatorIndex; i < formattedAmount.length; i += 3) {
+      if (buffer.isNotEmpty) {
+        buffer.write('.');
+      }
+      buffer.write(formattedAmount.substring(i, i + 3));
+    }
+    return buffer.toString();
   }
 }
 
@@ -320,6 +343,7 @@ class _PhoneDetailsViewState extends State<PhoneDetailsView> {
         initialModel: widget.phone.model.value,
         initialPrice: widget.phone.price.value,
         initialSpecifications: widget.phone.specifications.value,
+        initialImage: widget.phone.image,
       ),
     ).then((value) {
       if (value != null) {
@@ -329,6 +353,7 @@ class _PhoneDetailsViewState extends State<PhoneDetailsView> {
           value['model'] ?? '',
           value['price'] ?? 0,
           value['specifications'] ?? '',
+          value['image'], // Chuyển đường dẫn hình ảnh
         );
         setState(() {});
       }
@@ -384,22 +409,22 @@ class _PhoneDetailsViewState extends State<PhoneDetailsView> {
                   const SizedBox(height: 20),
                   Text(
                     'Thương hiệu: ${widget.phone.brand.value}',
-                    style: TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 18),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     'Mẫu: ${widget.phone.model.value}',
-                    style: TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 18),
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Giá: ${widget.phone.price.value} VND',
-                    style: TextStyle(fontSize: 18),
+                    'Giá: ${_formatCurrency(widget.phone.price.value)} VND',
+                    style: const TextStyle(fontSize: 18),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     'Thông số kỹ thuật: ${widget.phone.specifications.value}',
-                    style: TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 18),
                   ),
                 ],
               ),
@@ -408,6 +433,23 @@ class _PhoneDetailsViewState extends State<PhoneDetailsView> {
         ),
       ),
     );
+  }
+
+  String _formatCurrency(int amount) {
+    String formattedAmount = amount.toString();
+    if (formattedAmount.length <= 3) {
+      return formattedAmount;
+    }
+    int separatorIndex = formattedAmount.length % 3;
+    StringBuffer buffer = StringBuffer();
+    buffer.write(formattedAmount.substring(0, separatorIndex));
+    for (int i = separatorIndex; i < formattedAmount.length; i += 3) {
+      if (buffer.isNotEmpty) {
+        buffer.write('.');
+      }
+      buffer.write(formattedAmount.substring(i, i + 3));
+    }
+    return buffer.toString();
   }
 }
 
@@ -439,7 +481,7 @@ class _PhoneListViewState extends State<PhoneListView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cửa hàng Điện thoại'),
+        title: const Text('Cửa Hàng Điện Thoại'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
