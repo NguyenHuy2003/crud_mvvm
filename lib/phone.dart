@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -196,12 +197,19 @@ class _PhoneUpdateState extends State<PhoneUpdate> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: _imagePath != null
-                      ? Image.file(
-                          File(_imagePath!),
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
-                        )
+                      ? kIsWeb
+                          ? Image.network(
+                              _imagePath!,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.file(
+                              File(_imagePath!),
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                            )
                       : const Icon(
                           Icons.add_photo_alternate,
                           size: 60,
@@ -257,10 +265,15 @@ class PhoneWidget extends StatelessWidget {
           width: 60,
           height: 60,
           child: phone.image != null
-              ? Image.file(
-                  File(phone.image!),
-                  fit: BoxFit.scaleDown,
-                )
+              ? kIsWeb
+                  ? Image.network(
+                      phone.image!,
+                      fit: BoxFit.scaleDown,
+                    )
+                  : Image.file(
+                      File(phone.image!),
+                      fit: BoxFit.scaleDown,
+                    )
               : const Icon(
                   Icons.phone,
                   size: 40,
@@ -386,14 +399,21 @@ class _PhoneDetailsViewState extends State<PhoneDetailsView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (widget.phone.image != null &&
-                      File(widget.phone.image!)
-                          .existsSync()) // Kiểm tra nếu đường dẫn hình ảnh không rỗng và tệp tồn tại
-                    Image.file(
-                      File(widget.phone.image!),
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.contain,
-                    )
+                      widget.phone.image!
+                          .isNotEmpty) // Kiểm tra nếu đường dẫn hình ảnh không rỗng
+                    kIsWeb
+                        ? Image.network(
+                            widget.phone.image!,
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.contain,
+                          )
+                        : Image.file(
+                            File(widget.phone.image!),
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.contain,
+                          )
                   else
                     Container(
                       width: double.infinity,
